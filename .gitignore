@@ -3,6 +3,8 @@ stat-isa-internet/
 
 # Generated output
 endpoints.json
+mocks/
+server/
 
 # Binary
 mocker
