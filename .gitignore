@@ -1,6 +1,6 @@
 # Test repositories
 stat-isa-internet/
-
+*.env
 # Generated output
 endpoints.json
 mocks/

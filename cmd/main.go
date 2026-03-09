@@ -4,15 +4,24 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
 	"mocker/internal/mocker"
 	"mocker/internal/parser"
 	"mocker/internal/server"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	srcDir := flag.String("src", ".", "Source directory to scan for imported files")
 	mock := flag.Bool("mock", false, "Generate mock JSON files for each endpoint")
 	mockDir := flag.String("mock-dir", "mocks", "Directory to store mock files")
