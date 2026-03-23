@@ -109,7 +109,6 @@ func generateObject(schema map[string]*genai.Schema, obj *map[string]any) error 
 	for k := range schema {
 		reqKeys = append(reqKeys, k)
 	}
-	// Define the schema for the output
 	gschema := &genai.Schema{
 		Type:       genai.TypeObject,
 		Properties: schema,
@@ -121,7 +120,7 @@ func generateObject(schema map[string]*genai.Schema, obj *map[string]any) error 
 	}
 
 	res, err := client.Models.GenerateContent(ctx, "gemini-flash-lite-latest",
-		genai.Text("Generate a json object according to the schema,."), config)
+		genai.Text("Generate a json object according to the schema."), config)
 
 	if err != nil {
 		return fmt.Errorf("failed to generate content: %w", err)
@@ -132,4 +131,54 @@ func generateObject(schema map[string]*genai.Schema, obj *map[string]any) error 
 	}
 
 	return nil
+}
+
+func GenerateMockDataArrayLLM(td *parser.TypeDetails, count int) ([]map[string]interface{}, error) {
+	if os.Getenv("GOOGLE_API_KEY") == "" {
+		return nil, fmt.Errorf("The GOOGLE_API_KEY must be set.")
+	}
+
+	if td == nil {
+		return []map[string]interface{}{}, nil
+	}
+
+	schema := createSchema(td.Fields)
+
+	ctx := context.Background()
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey: os.Getenv("GEMINI_API_KEY"),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create genai client: %w", err)
+	}
+
+	itemSchema := &genai.Schema{
+		Type:       genai.TypeObject,
+		Properties: schema,
+	}
+
+	gschema := &genai.Schema{
+		Type:  genai.TypeArray,
+		Items: itemSchema,
+	}
+
+	config := &genai.GenerateContentConfig{
+		ResponseSchema:   gschema,
+		ResponseMIMEType: "application/json",
+	}
+
+	res, err := client.Models.GenerateContent(ctx, "gemini-flash-lite-latest",
+		genai.Text(fmt.Sprintf("Generate a json array with exactly %d distinct objects according to the schema. Each object should be different.", count)), config)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate content: %w", err)
+	}
+
+	var result []map[string]interface{}
+	err = json.Unmarshal([]byte(res.Text()), &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

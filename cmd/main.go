@@ -24,9 +24,9 @@ func main() {
 
 	srcDir := flag.String("src", ".", "Source directory to scan for imported files")
 	mock := flag.Bool("mock", false, "Generate mock JSON files for each endpoint")
-	mockDir := flag.String("mock-dir", "mocks", "Directory to store mock files")
+	mockDir := flag.String("mock-dir", "out/mocks", "Directory to store mock files")
 	generateServer := flag.Bool("server", false, "Generate Gin server with mock endpoints")
-	serverDir := flag.String("server-dir", "server", "Directory to store server files")
+	serverDir := flag.String("server-dir", "out/server", "Directory to store server files")
 	flag.Parse()
 
 	if flag.NArg() < 1 {

@@ -11,12 +11,14 @@ type Field struct {
 }
 
 type TypeDetails struct {
-	Package    string   `json:"package"`
-	Name       string   `json:"name"`
-	FullName   string   `json:"fullName"`
-	Fields     []Field  `json:"fields,omitempty"`
-	Extends    string   `json:"extends,omitempty"`
-	Implements []string `json:"implements,omitempty"`
+	Package      string   `json:"package"`
+	Name         string   `json:"name"`
+	FullName     string   `json:"fullName"`
+	IsCollection bool     `json:"isCollection,omitempty"`
+	GenericArgs  []string `json:"genericArgs,omitempty"`
+	Fields       []Field  `json:"fields,omitempty"`
+	Extends      string   `json:"extends,omitempty"`
+	Implements   []string `json:"implements,omitempty"`
 }
 
 type Endpoint struct {

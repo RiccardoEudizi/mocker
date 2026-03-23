@@ -3,11 +3,11 @@ stat-isa-internet/
 *.env
 # Generated output
 endpoints.json
-mocks/
-server/
+out/mocks/
+out/server/
 
 # Binary
-mocker
+out/mocker
 
 # IDE
 .idea/

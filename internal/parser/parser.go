@@ -1089,6 +1089,8 @@ func (p *Parser) parseMethod(methodNode *sitter.Node, content []byte, result *Re
 					if !isPrimitiveOrJavaLang(genericArg) {
 						typeDetails := p.resolveTypeDetails(simpleName, 0)
 						if typeDetails != nil {
+							typeDetails.IsCollection = true
+							typeDetails.GenericArgs = []string{genericArg}
 							returnTypeDetails[i] = typeDetails
 							if primaryTypeDetails == nil {
 								primaryTypeDetails = typeDetails
