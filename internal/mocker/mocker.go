@@ -2,7 +2,6 @@ package mocker
 
 import (
 	"fmt"
-	"math/rand"
 	"strings"
 	"time"
 
@@ -277,8 +276,4 @@ func GenerateFilename(endpoint *parser.Endpoint) string {
 	handler := sanitizeFilename(endpoint.Handler)
 
 	return fmt.Sprintf("%s-%s-%s.json", method, path, handler)
-}
-
-func init() {
-	rand.Seed(42)
 }
