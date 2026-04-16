@@ -1081,12 +1081,32 @@ func (p *Parser) parseMethod(methodNode *sitter.Node, content []byte, result *Re
 				endIdx := strings.LastIndex(returnType, ">")
 				if startIdx > 0 && endIdx > startIdx {
 					genericArg := returnType[startIdx+1 : endIdx]
-					// Resolve the generic argument type
-					simpleName := genericArg
-					if idx := strings.LastIndex(genericArg, "."); idx >= 0 {
-						simpleName = genericArg[idx+1:]
+
+					// In this case, we need to extract the inner type and resolve that
+					var simpleName string
+					if strings.Contains(genericArg, "<") {
+						// For nested generics, extract the inner type
+						innerStart := strings.Index(genericArg, "<")
+						innerEnd := strings.LastIndex(genericArg, ">")
+						if innerStart > 0 && innerEnd > innerStart {
+							innerType := genericArg[innerStart+1 : innerEnd]
+							// Get the class name from the fully qualified inner type
+							if idx := strings.LastIndex(innerType, "."); idx >= 0 {
+								simpleName = innerType[idx+1:]
+							} else {
+								simpleName = innerType
+							}
+						}
+					} else {
+						// Simple case: extract type name from generic arg
+						if idx := strings.LastIndex(genericArg, "."); idx >= 0 {
+							simpleName = genericArg[idx+1:]
+						} else {
+							simpleName = genericArg
+						}
 					}
-					if !isPrimitiveOrJavaLang(genericArg) {
+
+					if simpleName != "" && !isPrimitiveOrJavaLang(simpleName) {
 						typeDetails := p.resolveTypeDetails(simpleName, 0)
 						if typeDetails != nil {
 							typeDetails.IsCollection = true
@@ -1189,6 +1209,7 @@ func (p *Parser) extractGenericType(node *sitter.Node, content []byte) string {
 				var argType string
 				if child.Type() == "type_identifier" {
 					argType = string(content[child.StartByte():child.EndByte()])
+					argType = p.resolveTypeName(argType)
 				} else if child.Type() == "type" {
 					argType = p.extractType(child, content)
 				} else if child.Type() == "generic_type" {
@@ -1200,12 +1221,18 @@ func (p *Parser) extractGenericType(node *sitter.Node, content []byte) string {
 			}
 		}
 	} else {
-		// No type_list, look for type_identifier directly in type_arguments
+		// No type_list, look for type_identifier or generic_type directly in type_arguments
 		childCount := int(typeArguments.ChildCount())
 		for i := 0; i < childCount; i++ {
 			child := typeArguments.Child(i)
 			if child != nil && child.Type() == "type_identifier" {
 				argType := string(content[child.StartByte():child.EndByte()])
+				if argType != "" {
+					argType = p.resolveTypeName(argType)
+					typeArgs = append(typeArgs, argType)
+				}
+			} else if child != nil && child.Type() == "generic_type" {
+				argType := p.extractGenericType(child, content)
 				if argType != "" {
 					typeArgs = append(typeArgs, argType)
 				}
@@ -1382,10 +1409,17 @@ func (p *Parser) analyzeResponseBuilder(node *sitter.Node, methodNode *sitter.No
 		switch methodName {
 		case "noContent", "ok", "accepted", "notModified":
 			if i == len(chain)-1 {
+				// If has arguments, resolve the entity type
+				if len(args) > 0 {
+					return p.resolveVariableType(args[0], methodNode, content, depth)
+				}
 				return "void"
 			}
 		case "created":
 			if i == len(chain)-1 {
+				if len(args) > 0 {
+					return p.resolveVariableType(args[0], methodNode, content, depth)
+				}
 				return ""
 			}
 		case "entity":
@@ -1560,6 +1594,10 @@ func (p *Parser) resolveVariableType(varName string, methodNode *sitter.Node, co
 		locals := p.collectLocalVariables(methodNode, content)
 		localType, ok := locals[varName]
 		if ok {
+			// If it's a generic type that wasn't fully resolved, try to resolve it
+			if strings.Contains(localType, "<") && !strings.Contains(localType, ".") {
+				localType = p.resolveTypeName(localType)
+			}
 			return localType
 		}
 	}
@@ -1661,6 +1699,14 @@ func (p *Parser) collectLocalVariables(methodNode *sitter.Node, content []byte) 
 					varType = p.resolveTypeName(varType)
 				} else if typeNode.Type() == "generic_type" {
 					varType = p.extractGenericType(typeNode, content)
+				} else if typeNode.Type() == "type" {
+					// Check if it's a generic_type child
+					genericTypeNode := p.findChildByType(typeNode, "generic_type")
+					if genericTypeNode != nil {
+						varType = p.extractGenericType(genericTypeNode, content)
+					} else {
+						varType = p.extractType(typeNode, content)
+					}
 				} else {
 					varType = p.extractType(typeNode, content)
 				}

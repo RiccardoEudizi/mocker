@@ -27,6 +27,7 @@ func main() {
 	mockDir := flag.String("mock-dir", "out/mocks", "Directory to store mock files")
 	generateServer := flag.Bool("server", false, "Generate Gin server with mock endpoints")
 	serverDir := flag.String("server-dir", "out/server", "Directory to store server files")
+	local := flag.Bool("local", false, "Use local faker instead of AI for mock generation")
 	flag.Parse()
 
 	if flag.NArg() < 1 {
@@ -66,7 +67,7 @@ func main() {
 	fmt.Println("endpoints.json")
 
 	if *mock {
-		gen := mocker.New()
+		gen := mocker.New(*local)
 
 		err = os.MkdirAll(*mockDir, 0755)
 		if err != nil {

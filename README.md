@@ -23,6 +23,7 @@ go build -o mocker ./cmd/main.go
 | `-mock-dir` | string | `out/mocks` | Directory to store mock files |
 | `-server` | bool | `false` | Generate Gin server with mock endpoints |
 | `-server-dir` | string | `out/server` | Directory to store server files |
+| `-local` | bool | `false` | Use local faker instead of AI for mock generation |
 
 ### Arguments
 
@@ -44,7 +45,15 @@ Reads the Java controller and outputs `endpoints.json` with endpoint details.
 ./mocker -mock com/example/UserController.java
 ```
 
-Generates mock JSON files for each endpoint in `out/mocks/`.
+Generates mock JSON files for each endpoint in `out/mocks/`. Uses AI (Google Gemini) by default. Use `-local` to use local faker instead.
+
+### Generate Mocks (Local)
+
+```bash
+./mocker -mock -local com/example/UserController.java
+```
+
+Generates mock JSON files using local faker library (no API key required).
 
 ### Generate Mock Server
 
@@ -80,7 +89,8 @@ cd out/server && go run main.go
 - `@Produces`, `@Consumes`
 
 ### Mock Generation
-- Generates realistic mock data using faker library
+- Uses AI (Google Gemini) by default to generate realistic mock data
+- Use `-local` flag for local faker generation (no API key required)
 - Handles primitive types, collections, and nested objects
 - Creates properly named files based on endpoint paths
 
@@ -93,3 +103,8 @@ cd out/server && go run main.go
 
 - Go 1.25+
 - tree-sitter Java grammar
+
+## Environment Variables
+
+When using AI (default):
+- `GEMINI_API_KEY`: Google Gemini API key

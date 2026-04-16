@@ -12,12 +12,14 @@ import (
 )
 
 type Generator struct {
+	useLocal      bool
 	faker         faker.Faker
 	collectionLen int
 }
 
-func New() *Generator {
+func New(useLocal bool) *Generator {
 	return &Generator{
+		useLocal:      useLocal,
 		faker:         faker.New(),
 		collectionLen: 10,
 	}
@@ -41,6 +43,11 @@ func (g *Generator) GenerateMockFromTypeDetails(td *parser.TypeDetails) map[stri
 	if td == nil {
 		return nil
 	}
+
+	if g.useLocal {
+		return g.generateFromTypeDetailsFaker(td)
+	}
+
 	obj, err := ai.GenerateMockDataLLM(td)
 	if err != nil {
 		fmt.Println(err)
@@ -48,6 +55,14 @@ func (g *Generator) GenerateMockFromTypeDetails(td *parser.TypeDetails) map[stri
 	}
 
 	return obj
+}
+
+func (g *Generator) generateFromTypeDetailsFaker(td *parser.TypeDetails) map[string]interface{} {
+	result := make(map[string]interface{})
+	for _, field := range td.Fields {
+		result[field.Name] = g.generateFieldValue(field)
+	}
+	return result
 }
 
 func (g *Generator) generateFieldValue(field parser.Field) interface{} {
@@ -147,6 +162,13 @@ func (g *Generator) generateCollection(field parser.Field) []interface{} {
 		}
 
 		if field.TypeDetails != nil {
+			if g.useLocal {
+				result := make([]interface{}, length)
+				for i := 0; i < length; i++ {
+					result[i] = g.generateFromTypeDetailsFaker(field.TypeDetails)
+				}
+				return result
+			}
 			items, err := ai.GenerateMockDataArrayLLM(field.TypeDetails, length)
 			if err != nil {
 				fmt.Println(err)
@@ -193,10 +215,22 @@ func (g *Generator) generatePrimitiveCollection(typeName string, length int) []i
 }
 
 func (g *Generator) generateList(td *parser.TypeDetails) []map[string]interface{} {
+	if g.useLocal {
+		return g.generateListFaker(td)
+	}
+
 	items, err := ai.GenerateMockDataArrayLLM(td, g.collectionLen)
 	if err != nil {
 		fmt.Println(err)
 		return nil
+	}
+	return items
+}
+
+func (g *Generator) generateListFaker(td *parser.TypeDetails) []map[string]interface{} {
+	items := make([]map[string]interface{}, g.collectionLen)
+	for i := 0; i < g.collectionLen; i++ {
+		items[i] = g.generateFromTypeDetailsFaker(td)
 	}
 	return items
 }

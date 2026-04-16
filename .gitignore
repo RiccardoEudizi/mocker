@@ -1,5 +1,5 @@
 # Test repositories
-stat-isa-internet/
+test-repo/
 *.env
 # Generated output
 endpoints.json
